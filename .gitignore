@@ -1,0 +1,46 @@
+# Environment
+.env
+*.env
+!.env.example
+
+# Python
+*.pyc
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Django
+*.log
+db.sqlite3
+db_*.sqlite3
+*/migrations/*
+!*/migrations/__init__.py
+media/
+staticfiles/
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Docker
+*.pid
+*.seed
+*.pid.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
