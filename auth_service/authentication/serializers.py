@@ -21,8 +21,22 @@ class RegisterSerializer(serializers.ModelSerializer):
     """
     email = serializers.EmailField(
         required=True,
-        validators=[UniqueValidator(queryset=User.objects.all())]
+        validators=[UniqueValidator(queryset=User.objects.all(),
+                message="Користувач з таким email вже існує")]
     )
+
+    username = serializers.CharField(
+        required=True,
+        min_length=3,
+        max_length=150,
+        validators=[
+            UniqueValidator(
+                queryset=User.objects.all(),
+                message="Користувач з таким username вже існує"
+            )
+        ]
+    )
+
     password = serializers.CharField(
         write_only=True,
         required=True,
@@ -95,7 +109,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
-            password=validated_data['password'],
+            password=validated_data['password'], # ✅ Автоматично хешується
             first_name=validated_data.get('first_name', ''),
             last_name=validated_data.get('last_name', '')
         )

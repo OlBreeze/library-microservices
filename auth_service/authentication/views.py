@@ -6,8 +6,10 @@ from rest_framework.views import APIView
 from django.contrib.auth.models import User
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .serializers import RegisterSerializer, UserSerializer, ChangePasswordSerializer, UserProfileSerializer
+import logging
 
 
 class RegisterView(generics.CreateAPIView):
@@ -221,3 +223,72 @@ class UserDetailView(APIView):
             'first_name': user.first_name,
             'last_name': user.last_name,
         }, status=status.HTTP_200_OK)
+
+
+# Налаштування логера!!!
+# ---------------------------------------------------------------
+logger = logging.getLogger('authentication')
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    """
+    Кастомний view для отримання JWT токену з логуванням.
+    """
+
+    def post(self, request, *args, **kwargs):
+        username = request.data.get('username')
+
+        # Логуємо спробу входу
+        logger.info(f"Спроба входу: username={username}, IP={self.get_client_ip(request)}")
+
+        response = super().post(request, *args, **kwargs)
+
+        if response.status_code == 200:
+            logger.info(f"✅ Успішний вхід: username={username}")
+        else:
+            logger.warning(f"❌ Невдала спроба входу: username={username}")
+
+        return response
+
+    def get_client_ip(self, request):
+        """Отримання IP адреси клієнта."""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
+
+class LogoutView(generics.GenericAPIView):
+    """
+    Вихід з системи (blacklist refresh токену).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            refresh_token = request.data.get('refresh')
+            if not refresh_token:
+                return Response(
+                    {'error': 'Refresh token обов\'язковий'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Додаємо токен в blacklist
+            from rest_framework_simplejwt.tokens import RefreshToken
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+
+            logger.info(f"✅ Користувач {request.user.username} вийшов з системи")
+
+            return Response(
+                {'message': 'Успішний вихід з системи'},
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            logger.error(f"❌ Помилка виходу: {str(e)}")
+            return Response(
+                {'error': 'Невалідний токен'},
+                status=status.HTTP_400_BAD_REQUEST
+            )

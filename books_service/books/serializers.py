@@ -1,3 +1,6 @@
+import re
+
+import bleach
 from rest_framework import serializers
 from .models import Book
 
@@ -54,22 +57,30 @@ class BookSerializer(serializers.ModelSerializer):
 
         return value
 
-    def validate_title(self, value: str) -> str:
+    def validate_title(self, value):
         """
-        Валідація назви книги.
-
-        Args:
-            value: Назва книги
-
-        Returns:
-            Валідована назва книги
-
-        Raises:
-            ValidationError: Якщо назва порожня або містить тільки пробіли
+        Захист від XSS в назві книги.
         """
-        if not value or not value.strip():
-            raise serializers.ValidationError("Назва книги не може бути порожньою")
-        return value.strip()
+        # Видаляємо HTML теги
+        cleaned = bleach.clean(value, tags=[], strip=True)
+
+        # Перевіряємо на підозрілі патерни
+        suspicious_patterns = [
+            r'<script',
+            r'javascript:',
+            r'onerror=',
+            r'onload=',
+            r'<iframe',
+            r'<embed',
+        ]
+
+        for pattern in suspicious_patterns:
+            if re.search(pattern, value, re.IGNORECASE):
+                raise serializers.ValidationError(
+                    "Виявлено підозрілий вміст у назві книги"
+                )
+
+        return cleaned
 
 
 class BookListSerializer(serializers.ModelSerializer):

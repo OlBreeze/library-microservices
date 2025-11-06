@@ -143,6 +143,12 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 5,  # пагінація по 5 елементів
 }
+# !!! Включай это только после того, как весь сайт стабильно работает через HTTPS.
+# Иначе пользователи не смогут попасть на него по HTTP вообще.
+
+# SECURE_HSTS_SECONDS = 31536000  # 1 год
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+# SECURE_HSTS_PRELOAD = True
 
 # Swagger settings
 SWAGGER_SETTINGS = {
